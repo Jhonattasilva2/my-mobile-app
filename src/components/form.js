@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, TextInput, View, StyleSheet, Vibration, Keyboard, Pressable } from "react-native";
+import { TouchableOpacity, Text, TextInput, View, StyleSheet, Vibration, Keyboard, Pressable, FlatList } from "react-native";
 import { useState } from "react";
 import ResultImc from "./resultImc";
 
@@ -10,6 +10,7 @@ export default function Form(){
     const [imc, setImc] = useState(null)
     const [textButton, setTextButton] = useState("Calcular")
     const [errorMessage, setErrorMessage] = useState(null)
+    const [imcList, setImcList] = useState([])
 
     function verificationImc(){
         if(imc == null){
@@ -20,10 +21,13 @@ export default function Form(){
 
     function imcCalculator(){
         let heightFormat = height.replace(",",".")
-        return setImc((weight/(heightFormat * heightFormat)).toFixed(2))
+        let totalImc = (weight/(heightFormat * heightFormat)).toFixed(2)
+        setImcList((arr) => [...arr, {id: new Date().getTime(), imc: totalImc}])
+        setImc(totalImc)
     }
 
     function validationImc(){
+        console.log(imcList)
         if(weight != null && height != null){
             imcCalculator()
             setHeight(null)
@@ -31,19 +35,18 @@ export default function Form(){
             setMessageImc("Seu IMC é igual a:")
             setTextButton("Calcular Novamente")
             setErrorMessage(null)
-            return
-        }
-        verificationImc()
+        } else {
+            verificationImc()
         setImc(null)
         setTextButton("Calcular")
         setMessageImc("Preencha o peso e altura")
-        
-    Keyboard.dismiss
+        }
     }
 
     return(
-        <Pressable onPress={Keyboard.dismiss} style={styles.formContext}>
-            <View style={styles.form}>
+        <View style={styles.formContext}>
+            {imc == null ? 
+            <Pressable onPress={Keyboard.dismiss} style={styles.form}>
                 <Text style={styles.formLabel}>Altura</Text>
                 <Text style={styles.errorMessage}>{errorMessage}</Text>
                 <TextInput style={styles.input} placeholder="Ex. 1.83" keyboardType="numeric" onChangeText={setHeight} value={height}/>
@@ -53,9 +56,34 @@ export default function Form(){
                 <TouchableOpacity onPress={() => validationImc()} style={styles.buttonCalculator}>
                     <Text style={styles.textButtonCalculator}>{textButton}</Text>
                 </TouchableOpacity>
+            </Pressable>
+            : 
+            <View style={styles.exhibitionResultImc}>
+                <ResultImc messageResultImc={messageImc} resultImc={imc}/>
+                <TouchableOpacity onPress={() => validationImc()} style={styles.buttonCalculator}>
+                    <Text style={styles.textButtonCalculator}>{textButton}</Text>
+                </TouchableOpacity>
             </View>
-            <ResultImc messageResultImc={messageImc} resultImc={imc}/>
-        </Pressable>
+            }
+            <FlatList 
+            showsVerticalScrollIndicator={false}
+            style={styles.listImcs}
+             data={[...imcList].reverse()}
+             renderItem={({item}) => {
+                return (
+                    <Text style={styles.resultImcItem}>
+                        <Text style={styles.textResultItemList}>Resultado IMC = </Text>
+                        {item.imc}
+                    </Text>
+                )
+             }}
+             keyExtractor={(item) => {
+                item.id
+             }}
+             />
+
+            
+        </View>
     )
 }
 
@@ -112,5 +140,26 @@ const styles = StyleSheet.create({
         color: "red",
         fontWeight: "bold",
         paddingLeft: 20,
+    },
+
+    exhibitionResultImc: {
+        width: "100%",
+        height: "50%",
+        
+    },
+
+    listImcs: {
+        marginTop: 20,
+    },
+
+    resultImcItem: {
+        fontSize: 26,
+        color: "red",
+        height: 50,
+        width: "100%",
+        paddingRight: 20,
+    },
+    textResultItemList: {
+        fontSize: 16
     }
 })
